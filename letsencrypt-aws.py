@@ -584,7 +584,7 @@ def cli():
 @click.option(
     "--prod", is_flag=True, help="Generate certs using Letencrypt's Production environment."
 )
-def update_certificates(stage):
+def update_certificates(prod):
 
     logger = Logger()
     logger.emit("Startup...")
@@ -655,7 +655,7 @@ def update_certificates(stage):
     default="-",
     help="Where to write the private key to. Defaults to stdout."
 )
-def register(email, stage, out):
+def register(email, prod, out):
     logger = Logger()
     if prod:
         acme_directory_url = DEFAULT_ACME_DIRECTORY_URL
