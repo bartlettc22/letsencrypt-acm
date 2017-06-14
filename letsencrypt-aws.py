@@ -24,6 +24,7 @@ import rfc3986
 
 
 DEFAULT_ACME_DIRECTORY_URL = "https://acme-v01.api.letsencrypt.org/directory"
+STAGE_ACME_DIRECTORY_URL = "https://acme-staging.api.letsencrypt.org/directory"
 CERTIFICATE_EXPIRATION_THRESHOLD = datetime.timedelta(days=45)
 # One day
 PERSISTENT_SLEEP_INTERVAL = 60 * 60 * 24
@@ -580,7 +581,10 @@ def cli():
 #
 
 @cli.command(name="update-certificates")
-def update_certificates():
+@click.option(
+    "--stage", is_flag=True, help="Generate certs using Letencrypt's Stage environment."
+)
+def update_certificates(stage):
 
     logger = Logger()
     logger.emit("Startup...")
@@ -592,9 +596,11 @@ def update_certificates():
 
     config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
     domains = config["domains"]
-    acme_directory_url = config.get(
-        "acme_directory_url", DEFAULT_ACME_DIRECTORY_URL
-    )
+    if stage:
+        acme_directory_url = STAGE_ACME_DIRECTORY_URL
+    else:
+        acme_directory_url = DEFAULT_ACME_DIRECTORY_URL
+
     acme_account_key = config["acme_account_key"]
     acme_client = setup_acme_client(
         s3_client, acme_directory_url, acme_account_key
@@ -641,18 +647,22 @@ def update_certificates():
 @cli.command()
 @click.argument("email")
 @click.option(
+    "--stage", is_flag=True, help="Register using Letencrypt's Stage environment."
+)
+@click.option(
     "--out",
     type=click.File("w"),
     default="-",
     help="Where to write the private key to. Defaults to stdout."
 )
-def register(email, out):
+def register(email, stage, out):
     logger = Logger()
-    config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
-    print(config)
-    acme_directory_url = config.get(
-        "acme_directory_url", DEFAULT_ACME_DIRECTORY_URL
-    )
+    # config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
+    # print(config)
+    if stage:
+        acme_directory_url = STAGE_ACME_DIRECTORY_URL
+    else:
+        acme_directory_url = DEFAULT_ACME_DIRECTORY_URL
     print(acme_directory_url)
     logger.emit("acme-register.generate-key")
     private_key = generate_rsa_private_key()

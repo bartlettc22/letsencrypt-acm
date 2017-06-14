@@ -9,6 +9,5 @@
             "certificate_arn": "arn:aws:acm:us-west-2:1234567890:certificate/12345678-123a-123b-1234-a1b2c34d5c6d"
         }
     ],
-    "acme_account_key": "file:///reg_key/reg.pem",
-    "acme_directory_url": "https://acme-staging.api.letsencrypt.org/directory"
+    "acme_account_key": "s3:///letsencrypt_accounts/stage.pem"
 }
