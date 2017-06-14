@@ -13,7 +13,8 @@ environment variable. This should be a JSON object with the following schema:
             "key_type": "rsa or ecdsa, optional, defaults to rsa (string)"
         }
     ],
-    "acme_account_key": "location of the account private key (string)"
+    "acme_account_key": "location of the account private key (string)",
+    "acme_directory_url": "optional, defaults to Let's Encrypt production (string)"
 }
 ```
 
@@ -31,20 +32,6 @@ docker run \
   -v ${HOME}/.aws:/root/.aws \
   bartlettc/letsencrypt-acm \
   update-certificates
-```
-
-### Stage/Prod
-
-By default, certs will be generated in the [LetsEncrypt staging environment](https://letsencrypt.org/docs/staging-environment/).  To create a production cert, add the `--prod` flag as a parameter to the `update-certificates` command.  For example:
-
-```
-docker run \
-  --rm \
-  -e AWS_PROFILE=$AWS_PROFILE \
-  -e LETSENCRYPT_AWS_CONFIG="$(cat $(pwd)/config.json)" \
-  -v ${HOME}/.aws:/root/.aws \
-  bartlettc/letsencrypt-acm \
-  update-certificates --prod
 ```
 
 ### Saving certificates as file

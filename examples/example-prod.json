@@ -1,4 +1,5 @@
 {
+    "acme_account_key": "s3://letsencrypt/account-prod.pem",
     "domains": [
         {
             "hosts": ["testsite.com",
@@ -8,6 +9,5 @@
             "key_type": "rsa",
             "certificate_arn": "arn:aws:acm:us-west-2:1234567890:certificate/12345678-123a-123b-1234-a1b2c34d5c6d"
         }
-    ],
-    "acme_account_key": "s3:///letsencrypt_accounts/stage.pem"
+    ]
 }
