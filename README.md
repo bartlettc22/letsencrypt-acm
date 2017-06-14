@@ -1,4 +1,4 @@
- This project is used for generating [LetsEncrypt](https://letsencrypt.org/) SSL certificates and importing them into [Amazon's Certificate Manager](https://aws.amazon.com/certificate-manager/). This project is based on [letsencrypt-aws](https://github.com/alex/letsencrypt-aws) by Alex Gaynor.  
+ This project is used for generating [LetsEncrypt](https://letsencrypt.org/) SSL certificates and importing them into [Amazon's Certificate Manager](https://aws.amazon.com/certificate-manager/). This project is based on [letsencrypt-aws](https://github.com/alex/letsencrypt-aws) by Alex Gaynor.
 
 ## Configuration
 Configuration is read in via the `LETSENCRYPT_AWS_CONFIG`
@@ -30,8 +30,7 @@ docker run \
   -e AWS_PROFILE=$AWS_PROFILE \
   -e LETSENCRYPT_AWS_CONFIG="$(cat $(pwd)/config.json)" \
   -v ${HOME}/.aws:/root/.aws \
-  bartlettc/letsencrypt-acm \
-  update-certificates
+  bartlettc/letsencrypt-acm
 ```
 
 ### Saving certificates as file
@@ -45,6 +44,19 @@ docker run \
   -e LETSENCRYPT_AWS_CONFIG="$(cat $(pwd)/config.json)" \
   -v ${HOME}/.aws:/root/.aws \
   -v $(pwd)/certs:/certs \
-  bartlettc/letsencrypt-acm \
-  update-certificates
+  bartlettc/letsencrypt-acm
+```
+
+If you would like to use AWS environment variables
+
+```
+docker run \
+   --name letsencrypt \
+  --rm \
+  -e LETSENCRYPT_AWS_CONFIG="$(cat $(pwd)/config.json)" \
+  -e AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID \
+  -e AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY \
+  -e AWS_DEFAULT_REGION=$AWS_DEFAULT_REGION \
+  -v $(pwd)/certs:/certs \
+  bartlettc/letsencrypt-acm
 ```
