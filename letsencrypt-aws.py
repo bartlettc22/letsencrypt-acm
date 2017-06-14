@@ -648,7 +648,7 @@ def update_certificates():
     default="-",
     help="Where to write the private key to. Defaults to stdout."
 )
-def register(email, , out):
+def register(email, out):
     logger = Logger()
     config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
     print config
