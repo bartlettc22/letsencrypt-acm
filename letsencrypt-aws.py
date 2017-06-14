@@ -66,7 +66,7 @@ class ACMCertificate(object):
             ),
             CertificateChain=pem_certificate_chain.decode()
         )
-            
+
 
 
 
@@ -345,7 +345,7 @@ def request_certificate(logger, acme_client, authorizations, csr):
 
 
 def update_cert(logger, acme_client, force_issue, cert_request):
-    
+
     # if cert_request.cert_location.elb_name is not "":
     #     logger.emit("updating-elb", elb_name=cert_request.cert_location.elb_name)
 
@@ -381,7 +381,7 @@ def update_cert(logger, acme_client, force_issue, cert_request):
     #             not force_issue
     #         ):
     #             return
-    
+
     logger.emit(
     "Preparing to issue cert for", base_host=cert_request.hosts[0], arn=cert_request.cert_location.certificate_arn
     )
@@ -415,7 +415,7 @@ def update_cert(logger, acme_client, force_issue, cert_request):
 
         logger.emit(
         "Writing cert files...", base_host=cert_request.hosts[0], arn=cert_request.cert_location.certificate_arn
-        )        
+        )
         dt = datetime.datetime.today().strftime('%Y%m%d-%H%M%S')
         text_file = open("/certs/%s_%s.key" % (str(cert_request.hosts[0]),dt), "w")
         text_file.write(private_key.private_bytes(
@@ -470,7 +470,7 @@ def setup_acme_client(s3_client, acme_directory_url, acme_account_key):
     if uri.scheme == "file":
         if uri.host is None:
             path = uri.path
-        elif uri.path is None:  
+        elif uri.path is None:
             path = uri.host
         else:
             path = os.path.join(uri.host, uri.path)
@@ -575,7 +575,7 @@ def cli():
 
 # update-certificates
 # Default = searches ACM and updates if close to expiring or if domain list differs
-# Flags = --cert = name of cert to update 
+# Flags = --cert = name of cert to update
 #         --force = force update even if not needed (only if --cert passed?)
 #
 
@@ -584,7 +584,7 @@ def update_certificates():
 
     logger = Logger()
     logger.emit("Startup...")
-    
+
     session = boto3.Session()
     s3_client = session.client("s3")
     route53_client = session.client("route53")
@@ -621,7 +621,7 @@ def update_certificates():
 
         cert_location = ACMCertificate(
             acm_client,
-            domain["certificate_arn"]              
+            domain["certificate_arn"]
         )
 
         certificate_requests.append(CertificateRequest(
@@ -638,37 +638,37 @@ def update_certificates():
         force_issue, certificate_requests
     )
 
-# @cli.command()
-# @click.argument("email")
-# @click.option(
-#     "--out",
-#     type=click.File("w"),
-#     default="-",
-#     help="Where to write the private key to. Defaults to stdout."
-# )
-# def register(email, out):
-#     logger = Logger()
-#     config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
-#     print config
-#     acme_directory_url = config.get(
-#         "acme_directory_url", DEFAULT_ACME_DIRECTORY_URL
-#     )
-#     print acme_directory_url
-#     logger.emit("acme-register.generate-key")
-#     private_key = generate_rsa_private_key()
-#     acme_client = acme_client_for_private_key(acme_directory_url, private_key)
+@cli.command()
+@click.argument("email")
+@click.option(
+    "--out",
+    type=click.File("w"),
+    default="-",
+    help="Where to write the private key to. Defaults to stdout."
+)
+def register(email, out):
+    logger = Logger()
+    config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
+    print(config)
+    acme_directory_url = config.get(
+        "acme_directory_url", DEFAULT_ACME_DIRECTORY_URL
+    )
+    print(acme_directory_url)
+    logger.emit("acme-register.generate-key")
+    private_key = generate_rsa_private_key()
+    acme_client = acme_client_for_private_key(acme_directory_url, private_key)
 
-#     logger.emit("acme-register.register", email=email)
-#     registration = acme_client.register(
-#         acme.messages.NewRegistration.from_data(email=email)
-#     )
-#     logger.emit("acme-register.agree-to-tos")
-#     acme_client.agree_to_tos(registration)
-#     out.write(private_key.private_bytes(
-#         encoding=serialization.Encoding.PEM,
-#         format=serialization.PrivateFormat.TraditionalOpenSSL,
-#         encryption_algorithm=serialization.NoEncryption(),
-#     ))
+    logger.emit("acme-register.register", email=email)
+    registration = acme_client.register(
+        acme.messages.NewRegistration.from_data(email=email)
+    )
+    logger.emit("acme-register.agree-to-tos")
+    acme_client.agree_to_tos(registration)
+    out.write(private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption(),
+    ))
 
 
 if __name__ == "__main__":
