@@ -581,10 +581,7 @@ def cli():
 #
 
 @cli.command(name="update-certificates")
-@click.option(
-    "--prod", is_flag=True, help="Generate certs using Letencrypt's Production environment."
-)
-def update_certificates(prod):
+def update_certificates():
 
     logger = Logger()
     logger.emit("Startup...")
@@ -596,10 +593,9 @@ def update_certificates(prod):
 
     config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
     domains = config["domains"]
-    if prod:
-        acme_directory_url = DEFAULT_ACME_DIRECTORY_URL
-    else:
-        acme_directory_url = STAGE_ACME_DIRECTORY_URL
+    acme_directory_url = config.get(
+        "acme_directory_url", DEFAULT_ACME_DIRECTORY_URL
+    )
 
     acme_account_key = config["acme_account_key"]
     acme_client = setup_acme_client(
@@ -647,20 +643,18 @@ def update_certificates(prod):
 @cli.command()
 @click.argument("email")
 @click.option(
-    "--prod", is_flag=True, help="Register using Letencrypt's Production environment."
-)
-@click.option(
     "--out",
     type=click.File("w"),
     default="-",
     help="Where to write the private key to. Defaults to stdout."
 )
-def register(email, prod, out):
+def register(email, , out):
     logger = Logger()
-    if prod:
-        acme_directory_url = DEFAULT_ACME_DIRECTORY_URL
-    else:
-        acme_directory_url = STAGE_ACME_DIRECTORY_URL
+    config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
+    print config
+    acme_directory_url = config.get(
+        "acme_directory_url", DEFAULT_ACME_DIRECTORY_URL
+    )
     print(acme_directory_url)
     logger.emit("acme-register.generate-key")
     private_key = generate_rsa_private_key()
