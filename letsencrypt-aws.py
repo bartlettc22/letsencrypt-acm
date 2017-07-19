@@ -22,7 +22,6 @@ import OpenSSL.crypto
 
 import rfc3986
 
-
 DEFAULT_ACME_DIRECTORY_URL = "https://acme-v01.api.letsencrypt.org/directory"
 STAGE_ACME_DIRECTORY_URL = "https://acme-staging.api.letsencrypt.org/directory"
 CERTIFICATE_EXPIRATION_THRESHOLD = datetime.timedelta(days=45)
@@ -79,68 +78,6 @@ class CertificateRequest(object):
 
         self.hosts = hosts
         self.key_type = key_type
-
-
-# class ELBCertificate(object):
-#     def __init__(self, elb_client, iam_client, elb_name, elb_port):
-#         self.elb_client = elb_client
-#         self.iam_client = iam_client
-#         self.elb_name = elb_name
-#         self.elb_port = elb_port
-
-#     def get_current_certificate(self):
-#         response = self.elb_client.describe_load_balancers(
-#             LoadBalancerNames=[self.elb_name]
-#         )
-#         [description] = response["LoadBalancerDescriptions"]
-#         [elb_listener] = [
-#             listener["Listener"]
-#             for listener in description["ListenerDescriptions"]
-#             if listener["Listener"]["LoadBalancerPort"] == self.elb_port
-#         ]
-
-#         if "SSLCertificateId" not in elb_listener:
-#             raise ValueError(
-#                 "A certificate must already be configured for the ELB"
-#             )
-
-#         return _get_iam_certificate(
-#             self.iam_client, elb_listener["SSLCertificateId"]
-#         )
-
-#     def update_certificate(self, logger, hosts, private_key, pem_certificate,
-#                            pem_certificate_chain):
-#         logger.emit(
-#             "updating-elb.upload-iam-certificate", elb_name=self.elb_name
-#         )
-
-#         response = self.iam_client.upload_server_certificate(
-#             ServerCertificateName=generate_certificate_name(
-#                 hosts,
-#                 x509.load_pem_x509_certificate(
-#                     pem_certificate, default_backend()
-#                 )
-#             ),
-#             PrivateKey=private_key.private_bytes(
-#                 encoding=serialization.Encoding.PEM,
-#                 format=serialization.PrivateFormat.TraditionalOpenSSL,
-#                 encryption_algorithm=serialization.NoEncryption(),
-#             ),
-#             CertificateBody=pem_certificate.decode(),
-#             CertificateChain=pem_certificate_chain.decode(),
-#         )
-#         new_cert_arn = response["ServerCertificateMetadata"]["Arn"]
-
-#         # Sleep before trying to set the certificate, it appears to sometimes
-#         # fail without this.
-#         time.sleep(15)
-#         logger.emit("updating-elb.set-elb-certificate", elb_name=self.elb_name)
-#         self.elb_client.set_load_balancer_listener_ssl_certificate(
-#             LoadBalancerName=self.elb_name,
-#             SSLCertificateId=new_cert_arn,
-#             LoadBalancerPort=self.elb_port,
-#         )
-
 
 class Route53ChallengeCompleter(object):
     def __init__(self, route53_client):
@@ -347,44 +284,8 @@ def request_certificate(logger, acme_client, authorizations, csr):
 
 def update_cert(logger, acme_client, force_issue, cert_request):
 
-    # if cert_request.cert_location.elb_name is not "":
-    #     logger.emit("updating-elb", elb_name=cert_request.cert_location.elb_name)
-
-    #     current_cert = cert_request.cert_location.get_current_certificate()
-    #     if current_cert is not None:
-    #         logger.emit(
-    #             "updating-elb.certificate-expiration",
-    #             elb_name=cert_request.cert_location.elb_name,
-    #             expiration_date=current_cert.not_valid_after
-    #         )
-    #         days_until_expiration = (
-    #             current_cert.not_valid_after - datetime.datetime.today()
-    #         )
-
-    #         try:
-    #             san_extension = current_cert.extensions.get_extension_for_class(
-    #                 x509.SubjectAlternativeName
-    #             )
-    #         except x509.ExtensionNotFound:
-    #             # Handle the case where an old certificate doesn't have a SAN
-    #             # extension and always reissue in that case.
-    #             current_domains = []
-    #         else:
-    #             current_domains = san_extension.value.get_values_for_type(
-    #                 x509.DNSName
-    #             )
-
-    #         if (
-    #             days_until_expiration > CERTIFICATE_EXPIRATION_THRESHOLD and
-    #             # If the set of hosts we want for our certificate changes, we
-    #             # update even if the current certificate isn't expired.
-    #             sorted(current_domains) == sorted(cert_request.hosts) and
-    #             not force_issue
-    #         ):
-    #             return
-
     logger.emit(
-    "Preparing to issue cert for", base_host=cert_request.hosts[0], arn=cert_request.cert_location.certificate_arn
+        "Preparing to issue cert for", base_host=cert_request.hosts[0]
     )
 
     if cert_request.key_type == "rsa":
@@ -415,7 +316,7 @@ def update_cert(logger, acme_client, force_issue, cert_request):
         )
 
         logger.emit(
-        "Writing cert files...", base_host=cert_request.hosts[0], arn=cert_request.cert_location.certificate_arn
+        "Writing cert files...", base_host=cert_request.hosts[0]
         )
         dt = datetime.datetime.today().strftime('%Y%m%d-%H%M%S')
         text_file = open("/certs/%s_%s.key" % (str(cert_request.hosts[0]),dt), "w")
@@ -434,13 +335,14 @@ def update_cert(logger, acme_client, force_issue, cert_request):
         text_file.write(pem_certificate_chain.decode())
         text_file.close()
 
-        if cert_request.cert_location.certificate_arn is not "":
-            logger.emit(
-            "Updating ACM...", base_host=cert_request.hosts[0], arn=cert_request.cert_location.certificate_arn
-            )
-            cert_request.cert_location.update_certificate(
-                logger, private_key, pem_certificate, pem_certificate_chain
-            )
+        if cert_request.cert_location is not "":
+            if cert_request.cert_location.certificate_arn is not "":
+                logger.emit(
+                "Updating ACM...", base_host=cert_request.hosts[0], arn=cert_request.cert_location.certificate_arn
+                )
+                cert_request.cert_location.update_certificate(
+                    logger, private_key, pem_certificate, pem_certificate_chain
+                )
 
     finally:
         for authz_record in authorizations:
@@ -503,83 +405,6 @@ def acme_client_for_private_key(acme_directory_url, private_key):
 def cli():
     pass
 
-
-# @cli.command(name="update-certificates")
-# @click.option(
-#     "--persistent", is_flag=True, help="Runs in a loop, instead of just once."
-# )
-# @click.option(
-#     "--force-issue", is_flag=True, help=(
-#         "Issue a new certificate, even if the old one isn't close to "
-#         "expiration."
-#     )
-# )
-# def update_certificates(persistent=False, force_issue=False):
-#     logger = Logger()
-#     logger.emit("startup")
-
-#     if persistent and force_issue:
-#         raise ValueError("Can't specify both --persistent and --force-issue")
-
-#     session = boto3.Session()
-#     s3_client = session.client("s3")
-#     elb_client = session.client("elb")
-#     route53_client = session.client("route53")
-#     iam_client = session.client("iam")
-
-#     config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
-#     domains = config["domains"]
-#     acme_directory_url = config.get(
-#         "acme_directory_url", DEFAULT_ACME_DIRECTORY_URL
-#     )
-#     acme_account_key = config["acme_account_key"]
-#     acme_client = setup_acme_client(
-#         s3_client, acme_directory_url, acme_account_key
-#     )
-
-#     certificate_requests = []
-#     for domain in domains:
-#         if "elb" in domain:
-#             cert_location = ELBCertificate(
-#                 elb_client, iam_client,
-#                 domain["elb"]["name"], int(domain["elb"].get("port", 443))
-#             )
-#         else:
-#             raise ValueError(
-#                 "Unknown certificate location: {!r}".format(domain)
-#             )
-
-#         certificate_requests.append(CertificateRequest(
-#             cert_location,
-#             Route53ChallengeCompleter(route53_client),
-#             domain["hosts"],
-#             domain.get("key_type", "rsa"),
-#         ))
-
-#     if persistent:
-#         logger.emit("running", mode="persistent")
-#         while True:
-#             update_certs(
-#                 logger, acme_client,
-#                 force_issue, certificate_requests
-#             )
-#             # Sleep before we check again
-#             logger.emit("sleeping", duration=PERSISTENT_SLEEP_INTERVAL)
-#             time.sleep(PERSISTENT_SLEEP_INTERVAL)
-#     else:
-#         logger.emit("running", mode="single")
-#         update_certs(
-#             logger, acme_client,
-#             force_issue, certificate_requests
-#         )
-
-
-# update-certificates
-# Default = searches ACM and updates if close to expiring or if domain list differs
-# Flags = --cert = name of cert to update
-#         --force = force update even if not needed (only if --cert passed?)
-#
-
 @cli.command(name="update-certificates")
 def update_certificates():
 
@@ -608,23 +433,13 @@ def update_certificates():
     # Loop through each set of domains (each cert to be issued)
     for domain in domains:
 
-        # if "elb" in domain:
-        #     cert_location = ELBCertificate(
-        #         elb_client, iam_client,
-        #         domain["elb"]["name"], int(domain["elb"].get("port", 443))
-            # )
-        # else:
-        #     raise ValueError(
-        #         "Unknown certificate location: {!r}".format(domain)
-        #     )
-
-
-
-
-        cert_location = ACMCertificate(
-            acm_client,
-            domain["certificate_arn"]
-        )
+        if "certificate_arn" in domain:
+            cert_location = ACMCertificate(
+                acm_client,
+                domain["certificate_arn"]
+            )
+        else:
+            cert_location = ""
 
         certificate_requests.append(CertificateRequest(
             cert_location,
