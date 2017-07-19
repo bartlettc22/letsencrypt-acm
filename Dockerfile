@@ -4,7 +4,15 @@ FROM python:2.7-slim
 ENV LAST_UPDATE 6
 
 RUN apt-get update && apt-get upgrade -y
-RUN apt-get update && apt-get install -y build-essential libffi-dev libssl-dev git
+RUN apt-get update && apt-get install -y build-essential libffi-dev libssl-dev git curl
+
+ENV KUBE_VERSION="1.5.2"
+# Install kubectl
+RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/v$KUBE_VERSION/bin/linux/amd64/kubectl \
+      && chmod +x ./kubectl \
+      && mv ./kubectl /usr/local/bin/kubectl \
+      # Basic check it works.
+      && kubectl version --client
 
 WORKDIR /app/
 
