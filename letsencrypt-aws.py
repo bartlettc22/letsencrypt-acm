@@ -411,12 +411,13 @@ def update_certificates():
     logger = Logger()
     logger.emit("Startup...")
 
+    config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
+
     session = boto3.Session()
     s3_client = session.client("s3")
-    route53_client = session.client("route53")
-    acm_client = session.client("acm")
 
-    config = json.loads(os.environ["LETSENCRYPT_AWS_CONFIG"])
+    route53_client = session.client("route53")
+
     domains = config["domains"]
     acme_directory_url = config.get(
         "acme_directory_url", DEFAULT_ACME_DIRECTORY_URL
@@ -434,6 +435,9 @@ def update_certificates():
     for domain in domains:
 
         if "certificate_arn" in domain:
+            acm_arn_split = domain["certificate_arn"].split(":")
+            acm_region = acm_arn_split[3]
+            acm_client = session.client("acm", region_name = acm_region)
             cert_location = ACMCertificate(
                 acm_client,
                 domain["certificate_arn"]
